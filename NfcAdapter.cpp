@@ -9,8 +9,6 @@
 #include "MPN532_debug.h"
 #include "MNdefMessage.h"
 #include <string.h>
-//#include <sha1.h>
-//#include <TOTP.h>
 #include <stdlib.h>
 #include "NfcAdapter.h"
 
@@ -61,71 +59,6 @@ char otp[10];
 char cardId[] = "00005678";
 char cardName[] = "Macchina Prova 1";
 
-//TOTP totp = TOTP(secretKey, 10);
-
-
-/*void verifyOtpCode(String input) {
-    char* newCode;
-    char code[10];
-    char prevCode[10];
-    char nextCode[10];
-    
-    String a = input.substring(0, input.length() - 5);
-    char buff[11];
-    a.concat('0');
-    a.toCharArray(buff, sizeof(buff));
-    buff[sizeof(buff) - 1] = 0;
-    epoch = atol(buff);
-    //Serial.print("log: timestamp lenght = ");
-    //Serial.print(a.length());
-    //Serial.print(" - timestep: ");
-    //Serial.print(timestep);
-    //Serial.println(" ;");
-    
-    
-    newCode = totp.getCode(epoch);
-    strcpy(code, newCode);
-    newCode = totp.getCode(epoch - 10);
-    strcpy(prevCode, newCode);
-    newCode = totp.getCode(epoch + 10);
-    strcpy(nextCode, newCode);
-
-    
-    /*int f = strcmp(code, otp);
-    Serial.print("log: generated otp = ");
-    Serial.print(prevCode);
-    Serial.print(" ");
-    Serial.print(code);
-    Serial.print(" ");
-    Serial.print(nextCode);
-    Serial.print(" ");
-    Serial.print(" received otp = ");
-    Serial.print(otp);
-    Serial.print(" - compare = ");
-    Serial.print(f);
-    Serial.println(" ;");*/
-    
-    /*delay(50);
-    
-    
-    
-    if(strcmp(prevCode, otp) == 0) {
-        cardState = AUTHENTICATED;
-        //Serial.println("log: AUTHENTICATION OK con prevCode;");
-    } else if(strcmp(code, otp) == 0) {
-        cardState = AUTHENTICATED;
-        //Serial.println("log: AUTHENTICATION OK con code;");
-    } else if(strcmp(nextCode, otp) == 0) {
-        cardState = AUTHENTICATED;
-        //Serial.println("log: AUTHENTICATION OK con nextCode;");
-    } else {
-        cardState = ERROR_AUTH;
-        //Serial.println("log: AUTHENTICATION ERROR;");
-    }
-
-    timestamp = input;
-}*/
-
 void convertValue(String amount, String time) {
 	//String amount = inputS.substring(0, 5); //inputS.length() - 1);
 	//String time = inputS.substring(6);
@@ -146,6 +79,7 @@ void convertValue(String amount, String time) {
 void setCurrentDate(String input){
 
 }
+
 
 boolean readCommand() {
     boolean serialRead = false;
@@ -185,7 +119,7 @@ boolean readCommand() {
         } else if (inputCommand.equals(SERIAL_COMMAND_PURCHASE)) {
             //digitalWrite(led1, HIGH);
             //Serial.println(inputCommand.concat(SERIAL_RESPONSE_OK));
-        	Serial.println("log: command purchase;");
+        	//Serial.println("log: command purchase;");
         	transactionId++;
         	convertValue(inputValue.substring(0, 5), inputValue.substring(6, 16));
             cardState = PURCHASE;
@@ -193,7 +127,7 @@ boolean readCommand() {
         } else if (inputCommand.equals(SERIAL_COMMAND_RECHARGE)) {
             //digitalWrite(led1, HIGH);
             //Serial.println(inputCommand.concat(SERIAL_RESPONSE_OK));
-        	Serial.println("log: command recharge;");
+        	//Serial.println("log: command recharge;");
         	transactionId++;
         	convertValue(inputValue.substring(0, 5), inputValue.substring(6, 16));
             cardState = RECHARGE;
@@ -219,84 +153,6 @@ bool MyCard::init(){
     pn532.begin();
     return pn532.SAMConfig();
 }
-
-//boolean MyCard::initWifi(WizFi250 &shield) {
-//	_wifishield = &shield;
-//	boolean result = false;
-//	Serial.println("log:connecting to wifi;");
-//
-//	if(_wifishield->join(SSID0, KEY0, AUTH)) {
-//		Serial.println("log:connected to wifi;");
-//		delay(50);
-//		do{
-//
-//			validIp = _wifishield->ipSearch("www.google.com");
-//		}while(!validIp);
-//
-//		return true;
-//		/*if(_wifishield->ipSearch("www.google.com")) {
-//			Serial.print("log:connecting to app engine ");
-//			Serial.print((char*)_wifishield->m_peerIPAddr);
-//			Serial.println(";");
-//			if(_wifishield->connect((char*)_wifishield->m_peerIPAddr,TSN_REMOTE_PORT)) {
-//				Serial.println("log:connected to app engine servlet;");
-//				_wifishield->clear();
-//				return true;
-//			} else {
-//				Serial.println("log:wifi error 1;");
-//				return false;
-//			}
-//		} else {
-//			Serial.println("log:wifi error 2;");
-//			return false;
-//		}*//*
-//	} else {
-//		Serial.println("log:wifi error 3;");
-//		return false;
-//	}
-//}
-
-//boolean MyCard::backendConnection() {
-//	Serial.print("log:connecting to app engine ");
-//	Serial.print((char*)_wifishield->m_peerIPAddr);
-//	Serial.println(";");
-//	do{
-//
-//		connectedToBackend = _wifishield->connect((char*)_wifishield->m_peerIPAddr,TSN_REMOTE_PORT);
-//		delay(100);
-//	}while(!connectedToBackend);
-//
-//	Serial.println("log:connected to app engine servlet;");
-//	//_wifishield->clear();
-//	return true;
-//	/*if(_wifishield->connect((char*)_wifishield->m_peerIPAddr,TSN_REMOTE_PORT)) {
-//		Serial.println("log:connected to app engine servlet;");
-//		_wifishield->clear();
-//		return true;
-//	} else {
-//		Serial.println("log:wifi error;");
-//		return false;
-//	}*/
-//}
-
-//void MyCard::getSecureKey() {
-//	Serial.println("log: get secure key;");
-//
-//	if(!keyIsUpdated) {
-//		while(!connectedToBackend) {
-//			backendConnection();
-//		}
-//		Serial1.print("GET /gettodaykey HTTP/1.1\r\n");
-//		Serial1.print("Host:winged-standard-741.appspot.com\r\n\r\n");
-//		keyRequest = true;
-//		checkSerial();
-//
-//		Serial1.print("+++");
-//		delay(1200);
-//		_wifishield->closeAllSockets();
-//		totp = TOTP(secret, 20);
-//	}
-//}
 
 void MyCard::setId(char id[]) {
 	//memcpy(id, cardId, 8);
@@ -465,32 +321,6 @@ bool MyCard::emulate(const uint16_t tgInitAsTargetTimeout){
                         break;
                 }
                 break;
-            /*case AUTHENTICATE:
-                if((p1 == 0x00) && (p2 == 0x00)) {
-                    //DMSG("\nAuthenticating... ");
-                    for (int i = 0; i <= lc; i++) {
-                        //DMSG_HEX(rwbuf[C_APDU_DATA + i]);
-                        otp[i] = rwbuf[C_APDU_DATA + i];
-                        //DMSG_WRT(rwbuf[C_APDU_DATA + i]);
-                    }
-
-                    Serial.println("get_time:req;");
-                    while (!readCommand()) {
-                        delay(10);
-                    }
-                    
-                    switch (cardState) {
-                        case AUTHENTICATED:
-                            setResponse(COMMAND_COMPLETE, rwbuf, &sendlen);
-                            break;
-                        case ERROR_AUTH:
-                            setResponse(AUTH_ERROR, rwbuf, &sendlen);
-                            break;
-                    }
-                    
-                    
-                }
-                break;*/
             case LOG_IN:
                 if((p1 == 0x00) && (p2 == 0x00)) {
                     DMSG("\nLoggin in... ");
@@ -502,14 +332,14 @@ bool MyCard::emulate(const uint16_t tgInitAsTargetTimeout){
                     string[lc] = '\0';
                     String s = string;
                     int x = s.indexOf(',');
-                    int z = s.lastIndexOf(',');
+                    //int z = s.lastIndexOf(',');
                     int y = s.indexOf(';');
-                    controlKeyReceived = s.substring(0, z - 1);
-                    userId = s.substring(z + 1, x -1);
+                    //controlKeyReceived = s.substring(0, z - 1);
+                    userId = s.substring(0, x -1);
                     userCredit = s.substring(x + 1, y);
-                    /*Serial.print("log:");
-                    Serial.print(userCredit);
-                    Serial.println(";");*/
+                    Serial.print("log:");
+                    Serial.print(s);
+                    Serial.println(";");
                     Serial.print("set_data:");
                     Serial.print(userCredit);
                     Serial.println(";");
@@ -548,14 +378,20 @@ bool MyCard::emulate(const uint16_t tgInitAsTargetTimeout){
                             break;
                         case RECHARGE:
                             cardState = WAITING;
-                            Serial.println("log: status RECHARGED;");
+                            Serial.print("log: status RECHARGED ");
+                            Serial.print("transaction ID = ");
+                            Serial.print(transactionId);
+                            Serial.println(";");
                             setResponse(STATUS_RECHARGED, rwbuf, &sendlen);
                             //sendRequest(RECHARGE_TRANSACTION);
                             //eventType = RECHARGE_TRANSACTION;
                             break;
                         case PURCHASE:
                             cardState = WAITING;
-                            Serial.println("log: status PURCHASE;");
+                            Serial.print("log: status PURCHASE ");
+                            Serial.print("transaction ID = ");
+                            Serial.print(transactionId);
+                            Serial.println(";");
                             setResponse(STATUS_PURCHASE, rwbuf, &sendlen);
                             //sendRequest(PURCHASE_TRANSACTION);
                             //eventType = PURCHASE_TRANSACTION;
