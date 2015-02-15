@@ -13,6 +13,9 @@
 #include "NfcAdapter.h"
 
 #define MAX_TGREAD
+#define SERIAL_COMMAND_RECHARGE "rec"
+#define SERIAL_COMMAND_PURCHASE "pur"
+#define SERIAL_COMMAND_LOG "log"
 
 typedef enum { NONE, CC, NDEF} tag_file;   // CC ... Compatibility Container
 
@@ -58,6 +61,8 @@ char* otpReceived = "";
 char otp[10];
 char cardId[] = "00005678";
 char cardName[] = "Macchina Prova 1";
+char values[28];
+char transIdBuf[9];
 
 void convertValue(String amount, String time) {
 	//String amount = inputS.substring(0, 5); //inputS.length() - 1);
@@ -80,6 +85,41 @@ void setCurrentDate(String input){
 
 }
 
+boolean readCommand2() {
+	boolean response = false;
+
+	if(Serial.available() > 0) {
+		char serialBuffer[64];
+
+		Serial.readBytesUntil(10, serialBuffer, 64);
+
+		if(0 == memcmp(serialBuffer, SERIAL_COMMAND_RECHARGE, 3)) {
+			transactionId++;
+			String(transactionId).toCharArray(transIdBuf, sizeof(transIdBuf));
+			memcpy(values, serialBuffer + 4, 20);
+			memcpy(values + 19, transIdBuf, 9);
+			Serial.print("log: recharge ");
+			Serial.print(values);
+			Serial.println(";");
+            cardState = RECHARGE;
+			response = true;
+		} else if (0 == memcmp(serialBuffer, SERIAL_COMMAND_PURCHASE, 3)) {
+			transactionId++;
+			String(transactionId).toCharArray(transIdBuf, sizeof(transIdBuf));
+			memcpy(values, serialBuffer + 4, 20);
+			memcpy(values + 19, transIdBuf, 9);
+			Serial.print("log: purchase ");
+			Serial.print(values);
+			Serial.println(";");
+            cardState = PURCHASE;
+			response = true;
+		} else {
+			Serial.println("log: error;");
+			response = true;
+		}
+	}
+	return response;
+}
 
 boolean readCommand() {
     boolean serialRead = false;
@@ -366,7 +406,7 @@ bool MyCard::emulate(const uint16_t tgInitAsTargetTimeout){
             case READING_STATUS:
                 if((p1 == 0x00) && (p2 == 0x00)) {
                     
-                    readCommand();
+                    readCommand2();
                     
                     //waitingSerial();
                     switch (cardState) {
@@ -460,13 +500,16 @@ void MyCard::setResponse(responseCommand cmd, uint8_t* buf, uint8_t* sendlen, ui
         case PRIV_APPLICATION_SELECTED:
             buf[0] = R_SW1_PRIV_APP_SELECTED;
             buf[1] = R_SW2_PRIV_APP_SELECTED;
-            for (int y = 0; y < sizeof(cardId); y++) {
+            memcpy(buf+2, cardId, 9);
+            memcpy(buf + 2 + 8, ",", 2);
+            memcpy(buf + 2 + 8 + 1, secretKey, 11);
+            /*for (int y = 0; y < sizeof(cardId); y++) {
                 buf[y + 2] = (uint8_t)cardId[y];
             }
             buf[10] = (uint8_t)',';
             for (int z = 0; z < sizeof(secretKey); z++) {
             	buf[z + 2 + 9] = (uint8_t)secretKey[z];
-            }
+            }*/
             *sendlen = 2 + sizeof(cardId) + sizeof(secretKey)- 1;
         	break;
         case STATUS_WAITING:
@@ -477,26 +520,30 @@ void MyCard::setResponse(responseCommand cmd, uint8_t* buf, uint8_t* sendlen, ui
         case STATUS_RECHARGED:
             buf[0] = R_SW1_STATUS_RECHARGED;
             buf[1] = R_SW2_STATUS_RECHARGED;
-            for (int y = 0; y < sizeof(amountBuf); y++) {
+            memcpy(buf + 2, values, 27);
+            /*for (int y = 0; y < sizeof(amountBuf); y++) {
                 buf[y + 2] = (uint8_t)amountBuf[y];
             }
             buf[7] = (uint8_t)',';
             for (int z = 0; z < sizeof(timestampBuf); z++) {
             	buf[z + 2 + 6] = (uint8_t)timestampBuf[z];
             }
-            *sendlen= 2 + (sizeof(amountBuf) + sizeof(timestampBuf)- 1);
+            *sendlen= 2 + (sizeof(amountBuf) + sizeof(timestampBuf)- 1);*/
+            *sendlen = 2 + 28;
             break;
         case STATUS_PURCHASE:
             buf[0] = R_SW1_STATUS_PURCHASE;
             buf[1] = R_SW2_STATUS_PURCHASE;
-            for (int y = 0; y < sizeof(amountBuf); y++) {
+            memcpy(buf + 2, values, 27);
+            /*for (int y = 0; y < sizeof(amountBuf); y++) {
                 buf[y + 2] = (uint8_t)amountBuf[y];
             }
             buf[7] = (uint8_t)',';
             for (int z = 0; z < sizeof(timestampBuf); z++) {
             	buf[z + 2 + 6] = (uint8_t)timestampBuf[z];
             }
-            *sendlen= 2 + (sizeof(amountBuf) + sizeof(timestampBuf)- 1);
+            *sendlen= 2 + (sizeof(amountBuf) + sizeof(timestampBuf)- 1);*/
+            *sendlen = 2 + 28;
             break;
         case STATUS_DATA_UPDATED:
             buf[0] = R_SW1_STATUS_DATA_UPDATED;
